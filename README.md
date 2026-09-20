@@ -1,2 +1,0 @@
-# AlumniPortal
-Alumni Portal - Application

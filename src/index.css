@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* Default brand scale (indigo). Overwritten at runtime from the tenant's
+       chosen brand color — see src/utils/color.ts and AppStateContext. */
+    --color-brand-50: 242 242 255;
+    --color-brand-100: 230 230 255;
+    --color-brand-200: 208 207 255;
+    --color-brand-300: 176 173 255;
+    --color-brand-400: 139 131 255;
+    --color-brand-500: 108 92 245;
+    --color-brand-600: 91 63 230;
+    --color-brand-700: 76 48 201;
+    --color-brand-800: 63 42 161;
+    --color-brand-900: 54 40 129;
+    --color-brand-950: 33 23 81;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-ink-50 text-ink-900 dark:bg-ink-950 dark:text-ink-100 font-sans antialiased;
+  }
+  ::selection {
+    background-color: rgb(var(--color-brand-300) / 0.5);
+  }
+  * {
+    scrollbar-color: theme('colors.ink.300') transparent;
+    scrollbar-width: thin;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-300 dark:bg-ink-700 rounded-full;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  h1, h2, h3, h4, h5 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
