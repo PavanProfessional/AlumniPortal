@@ -1,24 +1,20 @@
-import { useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import clsx from 'clsx'
 import {
   Rss, Users, CalendarDays, MessagesSquare, Briefcase, Handshake, ImagePlus, Paperclip,
   Video, Hash, AtSign, Send, MessageCircle, Share2, Bookmark, ThumbsUp, PartyPopper,
   HeartHandshake, Heart, Lightbulb, X, MoreHorizontal, SquarePen, Search, ChevronRight,
+  Loader2, CheckCircle2,
 } from 'lucide-react'
 import { Card, Avatar, Button, IconButton, SearchInput, EmptyState } from '../../components/ui/Primitives'
 import { Badge, type BadgeTone } from '../../components/ui/Badge'
-import { SidePanel } from '../../components/ui/SidePanel'
-import { Pagination } from '../../components/ui/Pagination'
-import { usePagination } from '../../hooks/usePagination'
 import { useToast } from '../../components/ui/Toast'
 import { useAppState } from '../../context/AppStateContext'
 import { buildFeedPosts, feedAuthors } from '../../data/feed'
-import { safeAlumniRecords, type SafeAlumniRecord } from '../../data/alumniSource'
 import { communities, myGroupIds } from '../../data/communities'
 import { events } from '../../data/events'
 import { people } from '../../data/people'
-import { AlumniDetail, colorFor } from '../../components/alumni/AlumniQuickView'
 import { NOW, formatRelative, formatDate } from '../../utils/dates'
 import { formatCompact } from '../../utils/format'
 import type { FeedAuthor, FeedComment, FeedPost, FeedPostKind, ReactionType } from '../../types'
@@ -61,7 +57,6 @@ function handleFor(firstName: string, lastName: string) {
 export default function MemberFeed() {
   const { currentUser } = useAppState()
   const notify = useToast()
-  const navigate = useNavigate()
   const [posts, setPosts] = useState<FeedPost[]>(() => buildFeedPosts())
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'All' | 'Institution' | 'Alumni'>('All')
@@ -69,15 +64,14 @@ export default function MemberFeed() {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const [draftContent, setDraftContent] = useState('')
   const [draftImage, setDraftImage] = useState<string | undefined>()
-  const [selectedAlumnus, setSelectedAlumnus] = useState<SafeAlumniRecord | null>(null)
   const [messageQuery, setMessageQuery] = useState('')
   const [messageTab, setMessageTab] = useState<'Primary' | 'General' | 'Requests'>('Primary')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const PAGE_SIZE = 6
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const discoverAlumni = useMemo(
-    () => safeAlumniRecords.filter((r) => r.phone && r.email && r.education).slice(0, 14),
-    [],
-  )
   const joinedCommunities = useMemo(() => communities.filter((g) => myGroupIds.includes(g.id)), [])
   const messageContacts = useMemo(() => people.slice(20, 29).map((p, i) => ({ ...p, online: i % 3 !== 0 })), [])
   const filteredContacts = messageContacts.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(messageQuery.trim().toLowerCase()))
@@ -98,7 +92,33 @@ export default function MemberFeed() {
     })
   }, [posts, query, filter])
 
-  const { page, setPage, pageSize, setPageSize, totalItems, totalPages, pageItems, startIndex, endIndex } = usePagination(filtered, 6)
+  const visiblePosts = filtered.slice(0, visibleCount)
+  const hasMore = visibleCount < filtered.length
+
+  // Reset the window whenever the search/filter changes the underlying list.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [query, filter])
+
+  // Infinite scroll: fetch the next page when the sentinel below the list enters view.
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setLoadingMore(true)
+          window.setTimeout(() => {
+            setVisibleCount((c) => Math.min(c + PAGE_SIZE, filtered.length))
+            setLoadingMore(false)
+          }, 700)
+        }
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, filtered.length])
 
   function setReaction(postId: string, type: ReactionType) {
     setPosts((prev) => prev.map((p) => {
@@ -183,10 +203,10 @@ export default function MemberFeed() {
   const comingSoon = (what: string) => () => notify({ message: `${what} is coming soon`, type: 'info', position: 'top-right' })
 
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[264px_minmax(0,1fr)_300px] xl:items-start">
-        {/* ---------------- LEFT COLUMN ---------------- */}
-        <div className="hidden gap-5 xl:flex xl:flex-col">
+    <div className="h-[calc(100vh-7rem)] overflow-hidden">
+      <div className="grid h-full min-h-0 grid-cols-1 gap-5 xl:grid-cols-[264px_minmax(0,1fr)_300px] xl:items-stretch">
+        {/* ---------------- LEFT COLUMN (fixed — does not scroll with the feed) ---------------- */}
+        <div className="hidden h-full min-h-0 gap-5 overflow-y-auto pr-1 no-scrollbar xl:flex xl:flex-col">
           <Card className="p-5">
             <div className="flex items-center gap-3">
               <Avatar name={`${currentUser.firstName} ${currentUser.lastName}`} color={currentUser.avatarColor} size="lg" />
@@ -242,30 +262,9 @@ export default function MemberFeed() {
           </Card>
         </div>
 
-        {/* ---------------- CENTER COLUMN ---------------- */}
-        <div className="min-w-0 space-y-5">
-          <Card className="p-4">
-            <div className="flex items-center gap-4 overflow-x-auto pb-1">
-              <button onClick={() => navigate('/app/profile')} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
-                <div className="relative">
-                  <Avatar name={`${currentUser.firstName} ${currentUser.lastName}`} color={currentUser.avatarColor} size="lg" />
-                  <span className="absolute -bottom-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-brand-600 text-white ring-2 ring-white dark:ring-ink-900">
-                    <SquarePen className="h-2.5 w-2.5" />
-                  </span>
-                </div>
-                <span className="w-full truncate text-center text-[11px] text-ink-500 dark:text-ink-400">Your Profile</span>
-              </button>
-              {discoverAlumni.map((r) => (
-                <button key={r.id} onClick={() => setSelectedAlumnus(r)} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
-                  <div className="rounded-full ring-2 ring-brand-300 ring-offset-2 ring-offset-white dark:ring-offset-ink-900">
-                    <Avatar name={r.name} color={colorFor(r.index)} size="lg" />
-                  </div>
-                  <span className="w-full truncate text-center text-[11px] text-ink-500 dark:text-ink-400">{r.name.split(' ')[0]}</span>
-                </button>
-              ))}
-            </div>
-          </Card>
-
+        {/* ---------------- CENTER COLUMN (only this scrolls) ---------------- */}
+        <div className="flex h-full min-h-0 min-w-0 flex-col">
+        <div className="shrink-0 space-y-5">
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <Avatar name={`${currentUser.firstName} ${currentUser.lastName}`} color={currentUser.avatarColor} size="md" />
@@ -310,12 +309,12 @@ export default function MemberFeed() {
           </Card>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <SearchInput placeholder="Search posts and people…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} className="sm:max-w-sm" />
+            <SearchInput placeholder="Search posts and people…" value={query} onChange={(e) => setQuery(e.target.value)} className="sm:max-w-sm" />
             <div className="flex flex-wrap gap-2">
               {(['All', 'Institution', 'Alumni'] as const).map((f) => (
                 <button
                   key={f}
-                  onClick={() => { setFilter(f); setPage(1) }}
+                  onClick={() => setFilter(f)}
                   className={clsx(
                     'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                     filter === f ? 'border-brand-600 bg-brand-600 text-white' : 'border-ink-200 bg-white text-ink-600 hover:border-ink-300 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300',
@@ -326,43 +325,49 @@ export default function MemberFeed() {
               ))}
             </div>
           </div>
+        </div>
 
+        <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
           {filtered.length === 0 ? (
             <EmptyState icon={<Rss className="h-5 w-5" />} title="No posts found" description="Try a different search or filter." />
           ) : (
-            <>
-              <div className="space-y-5">
-                {pageItems.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    author={feedAuthors[post.authorId]}
-                    currentUser={currentUser}
-                    isExpanded={expanded.has(post.id)}
-                    onToggleExpand={() => toggleExpand(post.id)}
-                    onReact={(type) => setReaction(post.id, type)}
-                    onSave={() => toggleSave(post.id)}
-                    onShare={() => share(post.id)}
-                    commentDraft={commentDrafts[post.id] ?? ''}
-                    onCommentDraftChange={(v) => setCommentDrafts((prev) => ({ ...prev, [post.id]: v }))}
-                    onSubmitComment={() => submitComment(post.id)}
-                  />
-                ))}
-              </div>
-              <Card className="p-0">
-                <Pagination
-                  page={page} totalPages={totalPages} onPageChange={setPage}
-                  pageSize={pageSize} onPageSizeChange={setPageSize}
-                  totalItems={totalItems} startIndex={startIndex} endIndex={endIndex}
-                  pageSizeOptions={[6, 12, 20]}
+            <div className="space-y-5 pb-6">
+              {visiblePosts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  author={feedAuthors[post.authorId]}
+                  currentUser={currentUser}
+                  isExpanded={expanded.has(post.id)}
+                  onToggleExpand={() => toggleExpand(post.id)}
+                  onReact={(type) => setReaction(post.id, type)}
+                  onSave={() => toggleSave(post.id)}
+                  onShare={() => share(post.id)}
+                  commentDraft={commentDrafts[post.id] ?? ''}
+                  onCommentDraftChange={(v) => setCommentDrafts((prev) => ({ ...prev, [post.id]: v }))}
+                  onSubmitComment={() => submitComment(post.id)}
                 />
-              </Card>
-            </>
+              ))}
+
+              <div ref={sentinelRef} className="h-px" />
+
+              {loadingMore && (
+                <div className="flex items-center justify-center gap-2 py-2 text-sm text-ink-400">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading more posts…
+                </div>
+              )}
+              {!hasMore && !loadingMore && (
+                <div className="flex items-center justify-center gap-2 py-2 text-xs text-ink-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> You're all caught up
+                </div>
+              )}
+            </div>
           )}
         </div>
+        </div>
 
-        {/* ---------------- RIGHT COLUMN ---------------- */}
-        <div className="hidden gap-5 xl:flex xl:flex-col">
+        {/* ---------------- RIGHT COLUMN (fixed — does not scroll with the feed) ---------------- */}
+        <div className="hidden h-full min-h-0 gap-5 overflow-y-auto pl-1 no-scrollbar xl:flex xl:flex-col">
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-ink-900 dark:text-ink-50">Messages</p>
@@ -430,17 +435,6 @@ export default function MemberFeed() {
           </Card>
         </div>
       </div>
-
-      <SidePanel
-        open={!!selectedAlumnus}
-        onClose={() => setSelectedAlumnus(null)}
-        title={selectedAlumnus?.name ?? 'Alumnus'}
-        description="Alumni directory profile"
-        defaultSize="M"
-        allowResize={false}
-      >
-        {selectedAlumnus && <AlumniDetail record={selectedAlumnus} />}
-      </SidePanel>
     </div>
   )
 }

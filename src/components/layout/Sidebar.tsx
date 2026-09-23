@@ -32,7 +32,7 @@ export function Sidebar() {
         )}
       </div>
 
-      <div className="shrink-0 border-b border-ink-100 px-3 py-3 dark:border-ink-800">
+      <div className="shrink-0 border-b border-ink-100 px-3 py-3 dark:border-ink-800" data-tour="workspace-switcher">
         {expanded ? (
           <WorkspaceSwitcher />
         ) : (
@@ -42,7 +42,7 @@ export function Sidebar() {
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 py-3 no-scrollbar">
+      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 py-3 no-scrollbar" data-tour="sidebar-nav">
         <NavRow item={meta.home} expanded={expanded} />
 
         {meta.groups.map((group) => (
@@ -81,6 +81,21 @@ export function Sidebar() {
 }
 
 function NavRow({ item, expanded }: { item: import('./navConfig').NavItem; expanded: boolean }) {
+  const rowClass = clsx(
+    'flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium transition-colors',
+    expanded ? 'px-3' : 'justify-center px-0',
+    'text-ink-600 hover:bg-ink-50 hover:text-ink-900 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-100',
+  )
+
+  if (item.external) {
+    return (
+      <a href={item.to} target="_blank" rel="noreferrer" title={expanded ? undefined : item.label} className={rowClass}>
+        <item.icon className="h-4 w-4 shrink-0" />
+        {expanded && <span className="truncate">{item.label}</span>}
+      </a>
+    )
+  }
+
   return (
     <NavLink
       to={item.to}

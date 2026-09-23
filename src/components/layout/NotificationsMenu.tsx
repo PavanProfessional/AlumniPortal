@@ -16,7 +16,7 @@ export function NotificationsMenu() {
   const unread = items.filter((n) => !n.read).length
 
   return (
-    <Popover className="relative">
+    <Popover className="relative" data-tour="notifications">
       <Popover.Button className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-700 dark:text-ink-400 dark:hover:bg-ink-800 dark:hover:text-ink-200">
         <Bell className="h-4.5 w-4.5" />
         {unread > 0 && (

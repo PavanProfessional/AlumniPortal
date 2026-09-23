@@ -4,6 +4,8 @@ import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { MobileNav } from './MobileNav'
 import { CommandPalette } from './CommandPalette'
+import { AssistantWidget } from '../chat/AssistantWidget'
+import { TourOverlay } from '../tour/TourOverlay'
 import { useAppState } from '../../context/AppStateContext'
 import { workspaceMeta } from './navConfig'
 import type { UserRoleContext } from '../../types'
@@ -46,6 +48,8 @@ export function AppShell() {
         </main>
       </div>
       <CommandPalette />
+      <AssistantWidget />
+      <TourOverlay />
     </div>
   )
 }

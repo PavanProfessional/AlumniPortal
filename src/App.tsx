@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppStateProvider } from './context/AppStateContext'
 import { DashboardsProvider } from './context/DashboardsContext'
+import { TourProvider } from './context/TourContext'
 import { ToastProvider } from './components/ui/Toast'
 import { AppShell } from './components/layout/AppShell'
 
@@ -47,6 +48,7 @@ import AdminSettings from './pages/admin/Settings'
 import PlatformTenants from './pages/platform/Tenants'
 import PlatformTenantDetail from './pages/platform/TenantDetail'
 import PlatformBilling from './pages/platform/Billing'
+import PlatformLicense from './pages/platform/License'
 import PlatformFlags from './pages/platform/Flags'
 import PlatformSupport from './pages/platform/Support'
 import PlatformHealth from './pages/platform/Health'
@@ -56,6 +58,7 @@ export default function App() {
     <AppStateProvider>
       <DashboardsProvider>
       <ToastProvider>
+      <TourProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -106,6 +109,7 @@ export default function App() {
             <Route index element={<PlatformTenants />} />
             <Route path="tenants/:tenantId" element={<PlatformTenantDetail />} />
             <Route path="billing" element={<PlatformBilling />} />
+            <Route path="license" element={<PlatformLicense />} />
             <Route path="flags" element={<PlatformFlags />} />
             <Route path="support" element={<PlatformSupport />} />
             <Route path="health" element={<PlatformHealth />} />
@@ -114,6 +118,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </TourProvider>
       </ToastProvider>
       </DashboardsProvider>
     </AppStateProvider>

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, UserCircle, Users, CalendarDays, MessagesSquare, Briefcase,
   Handshake, Gift, Newspaper, Settings, UploadCloud, ShieldCheck, Megaphone,
   BarChart3, Plug, Workflow, ScrollText, Building2, CreditCard, Flag, LifeBuoy,
-  Activity, Bell, Rss,
+  Activity, Bell, Rss, Compass, KeyRound,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
@@ -12,6 +12,8 @@ export interface NavItem {
   to: string
   icon: ComponentType<{ className?: string }>
   end?: boolean
+  /** Opens in a new tab instead of routing internally — for links that leave the app. */
+  external?: boolean
 }
 
 // Main menu = NavGroup, sub menus = NavGroup.items. Grouped module-wise so the
@@ -54,6 +56,7 @@ const memberGroups: NavGroup[] = [
     items: [
       { label: 'Careers', to: '/app/careers', icon: Briefcase },
       { label: 'Mentorship', to: '/app/mentorship', icon: Handshake },
+      { label: 'Career Guidance', to: 'https://voluble-unicorn-721f22.netlify.app/', icon: Compass, external: true },
     ],
   },
   { label: 'Giving', icon: Gift, items: [{ label: 'Giving', to: '/app/giving', icon: Gift }] },
@@ -113,7 +116,13 @@ const adminGroups: NavGroup[] = [
 
 const platformHome: NavItem = { label: 'Tenants', to: '/platform', icon: Building2, end: true }
 const platformGroups: NavGroup[] = [
-  { label: 'Commercial', icon: CreditCard, items: [{ label: 'Billing & Plans', to: '/platform/billing', icon: CreditCard }] },
+  {
+    label: 'Commercial', icon: CreditCard,
+    items: [
+      { label: 'Billing & Plans', to: '/platform/billing', icon: CreditCard },
+      { label: 'License', to: '/platform/license', icon: KeyRound },
+    ],
+  },
   { label: 'Platform', icon: Flag, items: [{ label: 'Feature Flags', to: '/platform/flags', icon: Flag }] },
   {
     label: 'Support', icon: LifeBuoy,

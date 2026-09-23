@@ -46,12 +46,19 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
                 <div key={group.label} className="pt-2">
                   <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-400">{group.label}</p>
                   <div className="space-y-0.5">
-                    {group.items.map((item) => (
-                      <NavLink key={item.to} to={item.to} end={item.end} onClick={onClose} className={linkClass}>
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {item.label}
-                      </NavLink>
-                    ))}
+                    {group.items.map((item) =>
+                      item.external ? (
+                        <a key={item.to} href={item.to} target="_blank" rel="noreferrer" onClick={onClose} className={linkClass({ isActive: false })}>
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          {item.label}
+                        </a>
+                      ) : (
+                        <NavLink key={item.to} to={item.to} end={item.end} onClick={onClose} className={linkClass}>
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          {item.label}
+                        </NavLink>
+                      ),
+                    )}
                   </div>
                 </div>
               ))}
